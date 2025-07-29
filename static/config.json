@@ -1,0 +1,24 @@
+{
+  "api": {
+    "baseUrl": "http://114.132.225.114:13833",
+    "endpoints": {
+      "usage": "/apiUsage"
+    },
+    "refreshInterval": 300000
+  },
+  "app": {
+    "title": "MonkeyCode - 仪表盘",
+    "version": "v0.3.0",
+    "type": "免费版"
+  },
+  "features": {
+    "autoRefresh": true,
+    "showCharts": true,
+    "enableLogging": true
+  },
+  "ui": {
+    "theme": "light",
+    "language": "zh-CN",
+    "timezone": "Asia/Shanghai"
+  }
+} 

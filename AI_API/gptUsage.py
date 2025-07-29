@@ -1,6 +1,5 @@
-from fastapi import APIRouter 
 import requests 
-from config import Key
+from config import GptKey
 
 # headers = {
 #     ":authority": "api.chatanywhere.tech",
@@ -30,7 +29,7 @@ from config import Key
 # 根据method、authority、path结合得到的URL
 url = "https://api.chatanywhere.tech/v1/query/balance"
 headers = {
-    "Authorization": Key.api ,
+    "Authorization": GptKey.api ,
     "Accept": "application/json, text/plain, */*",
     "Origin": "https://api.chatanywhere.tech",
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"

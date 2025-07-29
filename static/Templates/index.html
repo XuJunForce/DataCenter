@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">MonkeyCode - 仪表盘</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="/static/js/config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .logo::before {
+            content: "🐒";
+            font-size: 24px;
+        }
+
+        .breadcrumb {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .download-btn {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 64px);
+        }
+
+        .sidebar {
+            width: 200px;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 24px 0;
+        }
+
+        .sidebar-item {
+            padding: 12px 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .sidebar-item.active {
+            background: #1e293b;
+            color: white;
+            border-radius: 8px;
+            margin: 0 12px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            font-size: 16px;
+            padding: 8px 0;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .tab.active {
+            color: #1e293b;
+            border-bottom-color: #3b82f6;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .metric-card {
+            grid-column: span 4;
+        }
+
+        .chart-card {
+            grid-column: span 8;
+        }
+
+        .full-width {
+            grid-column: span 12;
+        }
+
+        .half-width {
+            grid-column: span 6;
+        }
+
+        .quarter-width {
+            grid-column: span 3;
+        }
+
+        .metric-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .metric-desc {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .chart-container {
+            height: 200px;
+            position: relative;
+        }
+
+        .chart-container.tall {
+            height: 300px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .time-range {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: normal;
+        }
+
+        .user-rank {
+            list-style: none;
+        }
+
+        .user-rank li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .user-rank li:last-child {
+            border-bottom: none;
+        }
+
+        .rank-number {
+            width: 20px;
+            font-weight: 600;
+            color: #f59e0b;
+        }
+
+        .rank-number:first-child {
+            color: #ef4444;
+        }
+
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+
+        .version-info {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .version-badge {
+            background: #10b981;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .api-usage-info {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .usage-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .usage-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .usage-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .usage-value {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .usage-value.warning {
+            color: #f59e0b;
+        }
+
+        .usage-value.danger {
+            color: #ef4444;
+        }
+
+        .sparkline-container {
+            height: 60px;
+            margin-top: 12px;
+        }
+
+        .server-metrics {
+            margin-bottom: 16px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .metric-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .metric-label {
+            display: block;
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .metric-unit {
+            font-size: 12px;
+            color: #64748b;
+            margin-left: 2px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-item active">📊 仪表盘</div>
+            <div class="sidebar-item">💬 主机详情</div>
+            <div class="sidebar-item">🏥 模型管理</div>
+            <div style="margin-top: 32px; padding: 0 24px;">
+                <div style="margin-bottom: 16px; font-size: 12px; color: #64748b;">帮助文档</div>
+                <div class="sidebar-item" onclick="openGitHub()" data-github-url="https://github.com/XuJunForce?tab=repositories">📖 GITHUB</div>
+                <div class="sidebar-item" onclick="openResume()">💬 个人简历</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="tabs">
+                <div class="tab active">全局统计</div>
+                <div class="tab">成员统计</div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card metric-card">
+                    <div class="metric-label">总用户数</div>
+                    <div class="metric-value">11</div>
+                    <div class="metric-desc">其中 0 个用户被禁用</div>
+                </div>
+
+                <div class="card chart-card">
+                    <div class="card-title">
+                        活跃用户
+                        <span class="time-range">最近 90 天共 9 个活跃用户数</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="activeUsersChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card half-width">
+                    <div class="card-title">
+                        API Key 使用情况
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="time-range">实时数据</span>
+                            <button onclick="fetchApiUsage()" style="background: none; border: none; cursor: pointer; font-size: 16px; color: #64748b;" title="刷新数据">🔄</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="apiUsageChart"></canvas>
+                    </div>
+                    <div class="api-usage-info">
+                        <div class="usage-item">
+                            <span class="usage-label">已使用:</span>
+                            <span class="usage-value" id="balanceUsed">--</span>
+                        </div>
+                        <div class="usage-item">
+                            <span class="usage-label">总额度:</span>
+                            <span class="usage-value" id="balanceTotal">--</span>
+                        </div>
+                        <div class="usage-item">
+                            <span class="usage-label">剩余:</span>
+                            <span class="usage-value" id="balanceRemaining">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card half-width">
+                    <div class="card-title">
+                        DeepSeek API  使用情况
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="time-range">实时数据</span>
+                            <button onclick="fetchDeepseekApiUsage()" style="background: none; border: none; cursor: pointer; font-size: 16px; color: #64748b;" title="刷新数据">🔄</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="deepseekApiUsageChart"></canvas>
+                    </div>
+                    <div class="api-usage-info">
+                        <div class="usage-item">
+                            <span class="usage-label">本月使用:</span>
+                            <span class="usage-value" id="deepseekBalanceUsed">--</span>
+                        </div>
+                        <div class="usage-item">
+                            <span class="usage-label">可用额度:</span>
+                            <span class="usage-value" id="deepseekBalanceTotal">--</span>
+                        </div>
+                        <div class="usage-item">
+                            <span class="usage-label">剩余可用:</span>
+                            <span class="usage-value" id="deepseekBalanceRemaining">--</span>
+                        </div>
+                    </div>
+                </div>
+
+            <div class="card half-width">
+                <div class="card-title">
+                    Dify主机
+                    <span class="time-range">最近 90 天</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="difyLanguageChart"></canvas>
+                </div>
+            </div>
+
+        <div class="card half-width">
+            <div class="card-title">
+                后端主机
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="time-range">实时监控</span>
+                    <button onclick="fetchServerStatus()" style="background: none; border: none; cursor: pointer; font-size: 16px; color: #64748b;" title="刷新数据">🔄</button>
+                </div>
+            </div>
+            <div class="server-metrics">
+                <div class="metric-row">
+                    <div class="metric-item">
+                        <span class="metric-label">CPU</span>
+                        <span class="metric-value" id="cpuPercent">--</span>
+                        <span class="metric-unit">%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">内存</span>
+                        <span class="metric-value" id="memPercent">--</span>
+                        <span class="metric-unit">%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">磁盘</span>
+                        <span class="metric-value" id="diskPercent">--</span>
+                        <span class="metric-unit">%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="serverChart"></canvas>
+            </div>
+        </div>
+    </div>
+            
+            <div class="dashboard-grid">
+                <div class="card half-width">
+                    <div class="card-title">
+                        用户贡献榜
+                        <span class="time-range">最近 90 天</span>
+                    </div>
+                    <ol class="user-rank">
+                        <li><span class="rank-number">1</span> <span>李**</span> <span>3659</span></li>
+                        <li><span class="rank-number">2</span> <span>罗**</span> <span>3605</span></li>
+                        <li><span class="rank-number">3</span> <span>翻**</span> <span>2307</span></li>
+                        <li><span class="rank-number">4</span> <span>王**</span> <span>1747</span></li>
+                        <li><span class="rank-number">5</span> <span>丹**</span> <span>1332</span></li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载覆盖层 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <div>正在加载简历...</div>
+        </div>
+    </div>
+
+    <script>
+        // 通用图表配置
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#64748b';
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    display: false,
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    display: false,
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    radius: 0
+                }
+            }
+        };
+
+        // 生成模拟数据
+        function generateData(length, max = 100) {
+            return Array.from({length}, () => Math.floor(Math.random() * max));
+        }
+
+        // 活跃用户图表
+        new Chart(document.getElementById('activeUsersChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => i + 1),
+                datasets: [{
+                    data: generateData(30, 12),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: {
+                        ...commonOptions.scales.y,
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // API使用情况圆环图
+        let apiUsageChart;
+        let deepseekApiUsageChart;
+        let serverChart;
+        
+        // 服务器状态数据存储（60分钟历史数据）
+        let serverHistory = {
+            timestamps: [],
+            cpu: [],
+            memory: [],
+            disk: []
+        };
+        
+        async function fetchApiUsage() {
+            try {
+                const response = await fetch(AppConfig.getApiUrl('usage'));
+                const data = await response.json();
+                
+                if (data.APIKEYINFO) {
+                    const { balanceUsed, balanceTotal } = data.APIKEYINFO;
+                    const balanceRemaining = balanceTotal - balanceUsed;
+                    const usagePercentage = (balanceUsed / balanceTotal) * 100;
+                    
+                    // 更新显示数据
+                    document.getElementById('balanceUsed').textContent = balanceUsed.toFixed(2);
+                    document.getElementById('balanceTotal').textContent = balanceTotal.toFixed(2);
+                    document.getElementById('balanceRemaining').textContent = balanceRemaining.toFixed(2);
+                    
+                    // 根据使用情况设置颜色
+                    const remainingElement = document.getElementById('balanceRemaining');
+                    remainingElement.className = 'usage-value';
+                    if (usagePercentage >= 80) {
+                        remainingElement.classList.add('danger');
+                    } else if (usagePercentage >= 60) {
+                        remainingElement.classList.add('warning');
+                    }
+                    
+                    // 更新圆环图
+                    updateApiUsageChart(balanceUsed, balanceRemaining);
+                } else if (data.error) {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('获取API使用情况失败:', error);
+                // 显示错误状态
+                document.getElementById('balanceUsed').textContent = '获取失败';
+                document.getElementById('balanceTotal').textContent = '获取失败';
+                document.getElementById('balanceRemaining').textContent = '获取失败';
+            }
+        }
+        
+        function updateApiUsageChart(used, remaining) {
+            const ctx = document.getElementById('apiUsageChart').getContext('2d');
+            
+            // 销毁现有图表
+            if (apiUsageChart) {
+                apiUsageChart.destroy();
+            }
+            
+            // 创建新图表
+            apiUsageChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['已使用', '剩余'],
+                    datasets: [{
+                        data: [used, remaining],
+                        backgroundColor: ['#ef4444', '#10b981'],
+                        borderWidth: 0,
+                        cutout: '70%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value.toFixed(2)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 页面初始化
+        function initializePage() {
+            // 设置页面标题
+            document.getElementById('pageTitle').textContent = AppConfig.app.title;
+            
+            // 测试图表是否能正常工作
+            console.log('页面初始化开始...');
+            console.log('Chart.js 是否可用:', typeof Chart !== 'undefined');
+            
+            // 初始加载API使用情况
+            fetchApiUsage();
+            fetchDeepseekApiUsage();
+            fetchServerStatus(); // 初始加载服务器状态
+            
+            // 延迟一点再调用，确保DOM完全加载
+            setTimeout(() => {
+                console.log('延迟调用 fetchServerStatus...');
+                fetchServerStatus();
+            }, 1000);
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成');
+            
+            // 测试Chart.js是否正常工作
+            const testCanvas = document.getElementById('serverChart');
+            if (testCanvas) {
+                console.log('找到serverChart canvas元素');
+                const testCtx = testCanvas.getContext('2d');
+                if (testCtx) {
+                    console.log('Canvas上下文获取成功');
+                } else {
+                    console.error('无法获取Canvas上下文');
+                }
+            } else {
+                console.error('找不到serverChart canvas元素');
+            }
+            
+            initializePage();
+        });
+        
+        // DeepSeek API使用情况
+        async function fetchDeepseekApiUsage() {
+            try {
+                const response = await fetch('/DeepseekApiUsage');
+                const data = await response.json();
+                
+                if (data.APIKEYINFO && data.APIKEYINFO.code === 0 && data.APIKEYINFO.data) {
+                    const apiData = data.APIKEYINFO.data;
+                    
+                    // 解析DeepSeek API返回的数据
+                    const currentToken = apiData.current_token || 0; // 当前可用token
+                    const monthlyUsage = parseInt(apiData.monthly_usage) || 0; // 本月使用量
+                    const totalAvailableToken = parseInt(apiData.total_available_token_estimation) || 0; // 总可用token估算
+                    
+                    // 计算使用情况
+                    const balanceUsed = monthlyUsage; // 本月已使用
+                    const balanceTotal = currentToken; // 当前可用总额
+                    const balanceRemaining = currentToken - monthlyUsage; // 剩余可用
+                    const usagePercentage = currentToken > 0 ? (monthlyUsage / currentToken) * 100 : 0;
+                    
+                    // 更新显示数据
+                    document.getElementById('deepseekBalanceUsed').textContent = balanceUsed.toLocaleString();
+                    document.getElementById('deepseekBalanceTotal').textContent = balanceTotal.toLocaleString();
+                    document.getElementById('deepseekBalanceRemaining').textContent = balanceRemaining.toLocaleString();
+                    
+                    // 根据使用情况设置颜色
+                    const remainingElement = document.getElementById('deepseekBalanceRemaining');
+                    remainingElement.className = 'usage-value';
+                    if (usagePercentage >= 80) {
+                        remainingElement.classList.add('danger');
+                    } else if (usagePercentage >= 60) {
+                        remainingElement.classList.add('warning');
+                    }
+                    
+                    // 更新圆环图
+                    updateDeepseekApiUsageChart(balanceUsed, balanceRemaining);
+                } else {
+                    throw new Error(data.APIKEYINFO?.msg || '获取数据失败');
+                }
+            } catch (error) {
+                console.error('获取DeepSeek API使用情况失败:', error);
+                document.getElementById('deepseekBalanceUsed').textContent = '获取失败';
+                document.getElementById('deepseekBalanceTotal').textContent = '获取失败';
+                document.getElementById('deepseekBalanceRemaining').textContent = '获取失败';
+            }
+        }
+        
+        function updateDeepseekApiUsageChart(used, remaining) {
+            const ctx = document.getElementById('deepseekApiUsageChart').getContext('2d');
+            
+            // 销毁现有图表
+            if (deepseekApiUsageChart) {
+                deepseekApiUsageChart.destroy();
+            }
+            
+            // 创建新图表
+            deepseekApiUsageChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['已使用', '剩余'],
+                    datasets: [{
+                        data: [used, remaining],
+                        backgroundColor: ['#ef4444', '#10b981'],
+                        borderWidth: 0,
+                        cutout: '70%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value.toLocaleString()} tokens (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 服务器状态监控
+        async function fetchServerStatus() {
+            try {
+                console.log('开始获取服务器状态...');
+                const response = await fetch('/serverInfo/backup');
+                console.log('响应状态:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('获取到的数据:', data);
+                
+                if (data) {
+                    const cpuPercent = data.CPU.percent;
+                    const memPercent = data.mem.memPercent;
+                    const diskPercent = data.disk.diskPercent;
+                    
+                    console.log('解析的数据:', { cpuPercent, memPercent, diskPercent });
+                    
+                    // 更新当前指标显示
+                    document.getElementById('cpuPercent').textContent = cpuPercent.toFixed(1);
+                    document.getElementById('memPercent').textContent = memPercent.toFixed(1);
+                    document.getElementById('diskPercent').textContent = diskPercent.toFixed(1);
+                    
+                    // 获取历史数据并更新图表
+                    await fetchHistoricalData();
+                }
+            } catch (error) {
+                console.error('获取服务器状态失败:', error);
+                document.getElementById('cpuPercent').textContent = '获取失败';
+                document.getElementById('memPercent').textContent = '获取失败';
+                document.getElementById('diskPercent').textContent = '获取失败';
+            }
+        }
+
+        // 获取历史数据
+        async function fetchHistoricalData() {
+            try {
+                console.log('📈 正在获取历史数据...');
+                const response = await fetch('/serverInfo/historical-data?minutes=60');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📊 历史数据:', data);
+                
+                if (data && Array.isArray(data)) {
+                    // 清空现有历史数据
+                    serverHistory.timestamps = [];
+                    serverHistory.cpu = [];
+                    serverHistory.memory = [];
+                    serverHistory.disk = [];
+                    
+                    // 处理历史数据
+                    data.forEach(item => {
+                        // 格式化时间显示（只显示时:分）
+                        const timeStr = new Date(item.timestamp).toLocaleTimeString('zh-CN', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        
+                        serverHistory.timestamps.push(timeStr);
+                        serverHistory.cpu.push(item.cpu);
+                        serverHistory.memory.push(item.memory_percent);
+                        serverHistory.disk.push(item.disk_percent);
+                    });
+                    
+                    console.log('处理后的历史数据:', serverHistory);
+                    console.log('数据点数量:', serverHistory.timestamps.length);
+                    
+                    // 更新图表
+                    updateServerChart();
+                } else {
+                    console.warn('⚠️ 没有获取到历史数据，使用当前数据点');
+                    // 如果没有历史数据，添加当前数据点
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                    
+                    serverHistory.timestamps.push(timeStr);
+                    serverHistory.cpu.push(parseFloat(document.getElementById('cpuPercent').textContent));
+                    serverHistory.memory.push(parseFloat(document.getElementById('memPercent').textContent));
+                    serverHistory.disk.push(parseFloat(document.getElementById('diskPercent').textContent));
+                    
+                    updateServerChart();
+                }
+            } catch (error) {
+                console.error('❌ 获取历史数据失败:', error);
+                // 如果获取历史数据失败，使用当前数据点
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                
+                serverHistory.timestamps.push(timeStr);
+                serverHistory.cpu.push(parseFloat(document.getElementById('cpuPercent').textContent));
+                serverHistory.memory.push(parseFloat(document.getElementById('memPercent').textContent));
+                serverHistory.disk.push(parseFloat(document.getElementById('diskPercent').textContent));
+                
+                updateServerChart();
+            }
+        }
+        
+        function updateServerChart() {
+            console.log('updateServerChart 被调用');
+            console.log('历史数据:', serverHistory);
+            
+            const canvas = document.getElementById('serverChart');
+            if (!canvas) {
+                console.error('找不到 serverChart canvas 元素');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('无法获取 canvas 上下文');
+                return;
+            }
+            
+            // 销毁现有图表
+            if (serverChart) {
+                console.log('销毁现有图表');
+                serverChart.destroy();
+            }
+            
+            // 创建新图表
+            console.log('创建新图表，数据点数量:', serverHistory.timestamps.length);
+            serverChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: serverHistory.timestamps,
+                    datasets: [
+                        {
+                            label: 'CPU使用率',
+                            data: serverHistory.cpu,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2
+                        },
+                        {
+                            label: '内存使用率',
+                            data: serverHistory.memory,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2
+                        },
+                        {
+                            label: '磁盘使用率',
+                            data: serverHistory.disk,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 10
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 10,
+                                maxRotation: 0
+                            }
+                        },
+                        y: {
+                            display: true,
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: '#e2e8f0'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // 根据配置刷新数据
+        if (AppConfig.features.autoRefresh) {
+            setInterval(fetchApiUsage, AppConfig.getRefreshInterval());
+            setInterval(fetchDeepseekApiUsage, AppConfig.getRefreshInterval());
+            setInterval(fetchServerStatus, 60000); // 每1分钟获取一次服务器状态
+        }
+
+        // 编程语言饼图
+        new Chart(document.getElementById('difyLanguageChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['go', 'typescript', 'python', 'html', 'markdown'],
+                datasets: [{
+                    data: [40, 25, 15, 12, 8],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'right'
+                    }
+                }
+            }
+        });
+
+        // 注释掉不存在的图表，避免JavaScript错误
+        /*
+        // 实时使用情况
+        new Chart(document.getElementById('realtimeChart'), {
+            type: 'bar',
+            data: {
+                labels: Array.from({length: 60}, (_, i) => i + 1),
+                datasets: [{
+                    data: generateData(60, 10),
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 2
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 对话任务
+        new Chart(document.getElementById('chatTaskChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => i + 1),
+                datasets: [{
+                    data: generateData(30, 5),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 补全任务
+        new Chart(document.getElementById('completionTaskChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => i + 1),
+                datasets: [{
+                    data: generateData(30, 200),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 代码量
+        new Chart(document.getElementById('codeChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => i + 1),
+                datasets: [{
+                    data: generateData(30, 800),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 采纳率
+        new Chart(document.getElementById('adoptionChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => i + 1),
+                datasets: [{
+                    data: generateData(30, 1),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: commonOptions
+        });
+        */
+
+        // 标签页切换功能
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 侧边栏交互
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // 如果点击的是GitHub或个人简历项目，不执行默认的激活逻辑
+                if (this.textContent.includes('GITHUB') || this.textContent.includes('个人简历')) {
+                    return;
+                }
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // GitHub跳转函数
+        function openGitHub() {
+            const githubItem = document.querySelector('.sidebar-item[data-github-url]');
+            const githubUrl = githubItem.getAttribute('data-github-url');
+            window.open(githubUrl, '_blank');
+        }
+
+        // 个人简历跳转函数
+        function openResume() {
+            const resumeUrl = '/static/files/resume.pdf';
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            // 显示加载覆盖层
+            loadingOverlay.style.display = 'flex';
+            
+            // 检查PDF是否可访问
+            fetch(resumeUrl, { method: 'HEAD' })
+                .then(response => {
+                    if (response.ok) {
+                        window.open(resumeUrl, '_blank');
+                    } else {
+                        alert('抱歉，简历文件暂时无法访问');
+                    }
+                })
+                .catch(error => {
+                    console.error('访问简历文件失败:', error);
+                    alert('抱歉，简历文件暂时无法访问');
+                })
+                .finally(() => {
+                    // 隐藏加载覆盖层
+                    loadingOverlay.style.display = 'none';
+                });
+        }
+    </script>
+</body>
+</html>

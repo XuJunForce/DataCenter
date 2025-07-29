@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Usage Response</title>
+    <script src="/static/js/config.js"></script>
+</head>
+<body>
+    <h1>API Usage Response</h1>
+    <pre id="response"></pre>
+
+    <script>
+        fetch(AppConfig.getApiUrl('usage'))
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                document.getElementById('response').textContent = 'Error: ' + error.message;
+            });
+    </script>
+</body>
+</html>
